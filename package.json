@@ -14,10 +14,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "class-breakpoint.helloWorld",
-        "title": "Hello World"
-      },
-      {
         "command": "class-breakpoint.newBreakpoint",
         "title": "New Breakpoint"
       },
