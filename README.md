@@ -1,71 +1,140 @@
-# class-breakpoint README
+# BreakPoint - Classroom Training Extension
 
-This is the README for your extension "class-breakpoint". After writing up a brief description, we recommend including the following sections.
+A powerful VS Code extension designed for classroom training and educational purposes. BreakPoint allows instructors to create detailed, step-by-step project snapshots with integrated Git workflow management and automatic documentation generation.
 
-## Features
+## 🎯 Purpose
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+This extension is perfect for:
+- **Coding instructors** who need to demonstrate step-by-step project development
+- **Workshop facilitators** creating hands-on learning experiences
+- **Training materials** that require detailed change tracking
+- **Educational content** with progressive complexity
 
-For example if there is an image subfolder under your extension project workspace:
+## ✨ Features
 
-\!\[feature X\]\(images/feature-x.png\)
+### 🆕 **New Breakpoint**
+- Right-click any folder in the Explorer to create a new breakpoint
+- Automatically creates a Git branch for the breakpoint
+- Copies the entire folder structure as the initial step (`01-initial`)
+- Integrates seamlessly with Git workflow
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### ➕ **Add Step**
+- Incrementally track changes as you develop your project
+- Automatically detects and copies only modified files since the last commit
+- Creates numbered step folders (`02-feature`, `03-styling`, etc.)
+- Commits changes and merges to main branch automatically
 
-## Requirements
+### 🚀 **Push Main**
+- Safely pushes your main branch to remote repository
+- Automatically switches back to your breakpoint branch
+- Handles branch management transparently
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+### 📋 **Finish Breakpoint**
+- Generates comprehensive change logs with detailed documentation
+- Shows file listings organized by directory structure
+- **Includes actual Git diffs** showing exact code changes with `+` and `-` indicators
+- Creates collapsible sections for easy navigation
+- Opens the generated `change-log.md` automatically
 
-## Extension Settings
+## 🔧 How to Use
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+### Getting Started
 
-For example:
+1. **Open your project** in VS Code (preferably a Git repository)
+2. **Right-click any folder** in the Explorer view
+3. **Select "BreakPoint: New Breakpoint"**
+4. **Enter a name** for your breakpoint (e.g., "react-tutorial")
 
-This extension contributes the following settings:
+### Adding Steps
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+1. **Make changes** to your project code
+2. **Open Command Palette** (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+3. **Run "BreakPoint: Add Step"**
+4. **Enter a step name** (e.g., "add-components")
 
-## Known Issues
+### Finishing and Documentation
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+1. **Open Command Palette** (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+2. **Run "BreakPoint: Finish Breakpoint"**
+3. **Review the generated change log** with complete Git diffs
 
-## Release Notes
+### Sharing Your Work
 
-Users appreciate release notes as you update your extension.
+1. **Use "BreakPoint: Push Main"** to sync your main branch
+2. **Share the `breakpoints/` folder** with students
+3. **Students can follow along** using the detailed change logs
 
-### 1.0.0
+## 📁 Project Structure
 
-Initial release of ...
+After using BreakPoint, your project will have this structure:
 
-### 1.0.1
+```
+your-project/
+├── src/                          # Your main project files
+├── package.json
+└── breakpoints/
+    └── your-breakpoint-name/
+        ├── 01-initial/           # Initial project state
+        ├── 02-add-components/    # Changed files for step 2
+        ├── 03-styling/           # Changed files for step 3
+        └── change-log.md         # Generated documentation
+```
 
-Fixed issue #.
+## 🎓 Generated Documentation
 
-### 1.1.0
+The change log includes:
+- **Step-by-step file listings** organized by directory
+- **Git diffs** showing exactly what code changed
+- **Collapsible sections** for easy navigation
+- **Summary statistics** (total steps, file counts)
+- **Professional formatting** ready for educational use
 
-Added features X, Y, and Z.
+## 📋 Requirements
+
+- **VS Code** 1.102.0 or higher
+- **Git** repository (recommended for full functionality)
+- **Node.js** project structure (works with any language)
+
+## 🚨 Important Notes
+
+- **Git Integration**: For best results, use this extension in a Git repository
+- **Add Step Command**: Requires Git to track changes between steps
+- **File Tracking**: Only modified files are copied to step folders (efficient storage)
+- **Branch Management**: Extension creates and manages Git branches automatically
+
+## 🔄 Typical Workflow
+
+1. **Create breakpoint** from your project folder
+2. **Develop features** incrementally
+3. **Add steps** after each major change
+4. **Finish breakpoint** to generate documentation
+5. **Push main** to share with students
+6. **Students use change logs** to follow your teaching progression
+
+## 🎯 Perfect For
+
+- **React/Vue/Angular tutorials**
+- **API development workshops**
+- **Database integration lessons**
+- **Testing and deployment training**
+- **Any step-by-step coding instruction**
+
+## 💡 Tips
+
+- Use descriptive step names (e.g., "add-user-authentication", "implement-error-handling")
+- Commit your work regularly for better change tracking
+- The extension works with any programming language or framework
+- Generated change logs are perfect for student handouts
+
+## 🆘 Support
+
+If you encounter issues:
+1. Ensure you're in a Git repository
+2. Check that your workspace has proper folder structure
+3. Verify Git is properly configured in your environment
 
 ---
 
-## Following extension guidelines
+**Happy Teaching! 🚀**
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+*Created for educators who want to provide detailed, trackable learning experiences.*
