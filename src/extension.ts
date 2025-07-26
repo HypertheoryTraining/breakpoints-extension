@@ -85,6 +85,100 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	// Register the add step command
+	const addStepDisposable = vscode.commands.registerCommand('class-breakpoint.addStep', async (uri: vscode.Uri) => {
+		// The uri parameter contains the folder that was right-clicked
+		const folderPath = uri.fsPath;
+		
+		try {
+			// Get the workspace root
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (!workspaceFolder) {
+				vscode.window.showErrorMessage('No workspace folder found');
+				return;
+			}
+			
+			const workspaceRoot = workspaceFolder.uri.fsPath;
+			const breakpointsDir = path.join(workspaceRoot, 'breakpoints');
+			
+			// Check if breakpoints directory exists
+			if (!fs.existsSync(breakpointsDir)) {
+				vscode.window.showErrorMessage('No breakpoints folder found. Create a breakpoint first.');
+				return;
+			}
+			
+			// Find all breakpoint directories
+			const breakpointDirs = fs.readdirSync(breakpointsDir)
+				.filter(item => fs.statSync(path.join(breakpointsDir, item)).isDirectory());
+			
+			if (breakpointDirs.length === 0) {
+				vscode.window.showErrorMessage('No breakpoints found. Create a breakpoint first.');
+				return;
+			}
+			
+			// Let user select which breakpoint to add step to
+			let selectedBreakpoint: string;
+			if (breakpointDirs.length === 1) {
+				selectedBreakpoint = breakpointDirs[0];
+			} else {
+				const selection = await vscode.window.showQuickPick(breakpointDirs, {
+					placeHolder: 'Select a breakpoint to add step to'
+				});
+				if (!selection) {
+					return; // User cancelled
+				}
+				selectedBreakpoint = selection;
+			}
+			
+			const breakpointDir = path.join(breakpointsDir, selectedBreakpoint);
+			
+			// Find the next step number by looking at existing folders
+			const existingSteps = fs.readdirSync(breakpointDir)
+				.filter(item => fs.statSync(path.join(breakpointDir, item)).isDirectory())
+				.filter(item => /^\d{2}-/.test(item)) // Folders starting with two digits and a dash
+				.map(item => parseInt(item.substring(0, 2)))
+				.sort((a, b) => a - b);
+			
+			const nextStepNumber = existingSteps.length > 0 ? Math.max(...existingSteps) + 1 : 2;
+			const stepNumberStr = nextStepNumber.toString().padStart(2, '0');
+			
+			// Prompt user for step name
+			const stepName = await vscode.window.showInputBox({
+				prompt: 'Enter a name for the step',
+				placeHolder: 'Step name...',
+				validateInput: (value: string) => {
+					if (!value || value.trim() === '') {
+						return 'Step name cannot be empty';
+					}
+					return null;
+				}
+			});
+			
+			// Check if user cancelled the input
+			if (stepName === undefined) {
+				return; // User cancelled
+			}
+			
+			const stepFolderName = `${stepNumberStr}-${stepName}`;
+			const targetDir = path.join(breakpointDir, stepFolderName);
+			
+			// Check if step already exists
+			if (fs.existsSync(targetDir)) {
+				vscode.window.showErrorMessage(`Step "${stepFolderName}" already exists in breakpoint "${selectedBreakpoint}".`);
+				return;
+			}
+			
+			// Copy the folder content
+			await copyFolder(folderPath, targetDir);
+			
+			// Show success message
+			vscode.window.showInformationMessage(`Added step "${stepFolderName}" to breakpoint "${selectedBreakpoint}" successfully!`);
+			
+		} catch (error) {
+			vscode.window.showErrorMessage(`Failed to add step: ${error}`);
+		}
+	});
+
 	// Helper function to copy folder recursively
 	async function copyFolder(source: string, destination: string): Promise<void> {
 		// Create destination directory
@@ -110,6 +204,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(newBreakpointDisposable);
+	context.subscriptions.push(addStepDisposable);
 }
 
 // This method is called when your extension is deactivated

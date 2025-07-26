@@ -20,12 +20,21 @@
       {
         "command": "class-breakpoint.newBreakpoint",
         "title": "New Breakpoint"
+      },
+      {
+        "command": "class-breakpoint.addStep",
+        "title": "Add Step"
       }
     ],
     "menus": {
       "explorer/context": [
         {
           "command": "class-breakpoint.newBreakpoint",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
+        },
+        {
+          "command": "class-breakpoint.addStep",
           "when": "explorerResourceIsFolder",
           "group": "navigation"
         }
