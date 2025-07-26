@@ -138,3 +138,14 @@ If you encounter issues:
 **Happy Teaching! 🚀**
 
 *Created for educators who want to provide detailed, trackable learning experiences.*
+
+
+### Packaging and Installing the Extension
+
+```sh
+npm i -g vsce 
+vsce  package
+```  
+
+On the Extensions tab in VSCode, hit the ellipses and "Install From VSIX..."
+
