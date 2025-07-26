@@ -194,8 +194,22 @@ export function activate(context: vscode.ExtensionContext) {
 			
 			// Copy the folder content
 			if (await isGitRepository(workspaceRoot)) {
-				// In a Git repository - copy only changed files
-				await copyChangedFiles(workspaceRoot, targetDir);
+				// In a Git repository - first commit any pending changes, then copy only changed files
+				try {
+					// Check if there are uncommitted changes and commit them first
+					if (await hasUncommittedChanges(workspaceRoot)) {
+						await executeGitCommand('git add .', workspaceRoot);
+						await executeGitCommand(`git commit -m "Auto-commit changes before creating step ${stepFolderName}"`, workspaceRoot);
+						vscode.window.showInformationMessage('Committed pending changes before creating step');
+					}
+					
+					// Now copy the files that were just committed
+					await copyChangedFiles(workspaceRoot, targetDir);
+				} catch (gitError: any) {
+					vscode.window.showWarningMessage(`Git operations failed: ${gitError.message}. Falling back to copying entire folder.`);
+					// Fall back to copying entire folder if Git operations fail
+					await copyFolder(folderPath, targetDir);
+				}
 			} else {
 				// Not in Git repository - copy entire folder as before
 				await copyFolder(folderPath, targetDir);
@@ -302,18 +316,14 @@ export function activate(context: vscode.ExtensionContext) {
 	// Helper function to copy only changed files since last commit
 	async function copyChangedFiles(workspaceRoot: string, destination: string): Promise<void> {
 		try {
-			// Get list of changed files since last commit
-			const changedFilesOutput = await executeGitCommand('git diff --name-only HEAD', workspaceRoot);
-			const stagedFilesOutput = await executeGitCommand('git diff --cached --name-only', workspaceRoot);
+			// Get list of changed files between the current commit and the previous commit
+			const changedFilesOutput = await executeGitCommand('git diff --name-only HEAD~1 HEAD', workspaceRoot);
 			
-			// Combine changed and staged files
-			const changedFiles = new Set([
-				...changedFilesOutput.split('\n').filter(f => f.trim()),
-				...stagedFilesOutput.split('\n').filter(f => f.trim())
-			]);
+			// Split and filter the files
+			const changedFiles = changedFilesOutput.split('\n').filter(f => f.trim());
 			
-			if (changedFiles.size === 0) {
-				vscode.window.showWarningMessage('No changed files found since last commit. Creating empty step folder.');
+			if (changedFiles.length === 0) {
+				vscode.window.showWarningMessage('No changed files found in the last commit. Creating empty step folder.');
 				fs.mkdirSync(destination, { recursive: true });
 				return;
 			}
@@ -337,7 +347,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 			}
 			
-			vscode.window.showInformationMessage(`Copied ${changedFiles.size} changed file(s) to step folder`);
+			vscode.window.showInformationMessage(`Copied ${changedFiles.length} changed file(s) from last commit to step folder`);
 			
 		} catch (error: any) {
 			vscode.window.showErrorMessage(`Failed to get changed files: ${error.message}`);
