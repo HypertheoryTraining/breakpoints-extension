@@ -15,11 +15,11 @@
     "commands": [
       {
         "command": "class-breakpoint.newBreakpoint",
-        "title": "New Breakpoint"
+        "title": "BreakPoint: New Breakpoint"
       },
       {
         "command": "class-breakpoint.addStep",
-        "title": "Add Step"
+        "title": "BreakPoint: Add Step"
       },
       {
         "command": "class-breakpoint.pushMain",
@@ -31,7 +31,7 @@
         {
           "command": "class-breakpoint.newBreakpoint",
           "when": "explorerResourceIsFolder",
-          "group": "navigation"
+          "group": "z_commands"
         }
       ]
     }
