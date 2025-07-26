@@ -24,6 +24,10 @@
       {
         "command": "class-breakpoint.addStep",
         "title": "Add Step"
+      },
+      {
+        "command": "class-breakpoint.pushMain",
+        "title": "BreakPoint: Push Main"
       }
     ],
     "menus": {

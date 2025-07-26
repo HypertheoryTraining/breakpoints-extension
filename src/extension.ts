@@ -3,6 +3,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -52,6 +54,18 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			
 			const workspaceRoot = workspaceFolder.uri.fsPath;
+			
+			// Check if this is a Git repository and perform Git operations
+			if (await isGitRepository(workspaceRoot)) {
+				try {
+					await performGitOperations(workspaceRoot, breakpointName);
+					vscode.window.showInformationMessage(`Created Git branch "${breakpointName}"`);
+				} catch (gitError: any) {
+					vscode.window.showWarningMessage(`Git operations failed: ${gitError.message}`);
+					// Continue with breakpoint creation even if Git fails
+				}
+			}
+			
 			const breakpointsDir = path.join(workspaceRoot, 'breakpoints');
 			const breakpointDir = path.join(breakpointsDir, breakpointName);
 			const targetDir = path.join(breakpointDir, '01-initial');
@@ -76,6 +90,16 @@ export function activate(context: vscode.ExtensionContext) {
 			
 			// Copy the folder content
 			await copyFolder(folderPath, targetDir);
+			
+			// If in Git repository, add and commit the breakpoint files
+			if (await isGitRepository(workspaceRoot)) {
+				try {
+					await executeGitCommand('git add .', workspaceRoot);
+					await executeGitCommand('git commit -m "created breakpoint"', workspaceRoot);
+				} catch (gitError: any) {
+					vscode.window.showWarningMessage(`Failed to commit breakpoint: ${gitError.message}`);
+				}
+			}
 			
 			// Show success message
 			vscode.window.showInformationMessage(`Created breakpoint "${breakpointName}" successfully!`);
@@ -171,11 +195,78 @@ export function activate(context: vscode.ExtensionContext) {
 			// Copy the folder content
 			await copyFolder(folderPath, targetDir);
 			
+			// If in Git repository, commit the step, merge to main, and switch back
+			if (await isGitRepository(workspaceRoot)) {
+				try {
+					// Add and commit the new step
+					await executeGitCommand('git add .', workspaceRoot);
+					await executeGitCommand(`git commit -m "${stepFolderName}"`, workspaceRoot);
+					
+					// Switch to main branch
+					await executeGitCommand('git checkout main', workspaceRoot);
+					
+					// Merge the breakpoint branch
+					await executeGitCommand(`git merge ${selectedBreakpoint}`, workspaceRoot);
+					
+					// Switch back to the breakpoint branch
+					await executeGitCommand(`git checkout ${selectedBreakpoint}`, workspaceRoot);
+					
+					vscode.window.showInformationMessage(`Git operations completed: committed "${stepFolderName}", merged to main, and returned to "${selectedBreakpoint}" branch`);
+				} catch (gitError: any) {
+					vscode.window.showWarningMessage(`Git operations failed: ${gitError.message}`);
+				}
+			}
+			
 			// Show success message
 			vscode.window.showInformationMessage(`Added step "${stepFolderName}" to breakpoint "${selectedBreakpoint}" successfully!`);
 			
 		} catch (error) {
 			vscode.window.showErrorMessage(`Failed to add step: ${error}`);
+		}
+	});
+
+	// Register the push main command
+	const pushMainDisposable = vscode.commands.registerCommand('class-breakpoint.pushMain', async () => {
+		try {
+			// Get the workspace root
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (!workspaceFolder) {
+				vscode.window.showErrorMessage('No workspace folder found');
+				return;
+			}
+			
+			const workspaceRoot = workspaceFolder.uri.fsPath;
+			
+			// Check if this is a Git repository
+			if (!(await isGitRepository(workspaceRoot))) {
+				vscode.window.showErrorMessage('Not a Git repository');
+				return;
+			}
+			
+			try {
+				// Get current branch to switch back to later
+				const currentBranch = await executeGitCommand('git branch --show-current', workspaceRoot);
+				
+				// Switch to main branch
+				await executeGitCommand('git checkout main', workspaceRoot);
+				
+				// Push main branch to origin
+				await executeGitCommand('git push origin main', workspaceRoot);
+				
+				// Switch back to the original branch if it wasn't main
+				if (currentBranch !== 'main') {
+					await executeGitCommand(`git checkout ${currentBranch}`, workspaceRoot);
+					vscode.window.showInformationMessage(`Pushed main to origin and returned to "${currentBranch}" branch`);
+				} else {
+					vscode.window.showInformationMessage('Pushed main to origin successfully');
+				}
+				
+			} catch (gitError: any) {
+				vscode.window.showErrorMessage(`Failed to push main: ${gitError.message}`);
+			}
+			
+		} catch (error) {
+			vscode.window.showErrorMessage(`Failed to push main: ${error}`);
 		}
 	});
 
@@ -202,9 +293,51 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
+	// Helper function to execute git commands
+	const execAsync = promisify(exec);
+	
+	async function executeGitCommand(command: string, cwd: string): Promise<string> {
+		try {
+			const { stdout } = await execAsync(command, { cwd });
+			return stdout.trim();
+		} catch (error: any) {
+			throw new Error(`Git command failed: ${error.message}`);
+		}
+	}
+	
+	async function isGitRepository(workspaceRoot: string): Promise<boolean> {
+		try {
+			await executeGitCommand('git rev-parse --git-dir', workspaceRoot);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+	
+	async function hasUncommittedChanges(workspaceRoot: string): Promise<boolean> {
+		try {
+			const status = await executeGitCommand('git status --porcelain', workspaceRoot);
+			return status.length > 0;
+		} catch {
+			return false;
+		}
+	}
+	
+	async function performGitOperations(workspaceRoot: string, breakpointName: string): Promise<void> {
+		// Check if there are uncommitted changes and commit them
+		if (await hasUncommittedChanges(workspaceRoot)) {
+			await executeGitCommand('git add .', workspaceRoot);
+			await executeGitCommand('git commit -m "Auto-commit before creating breakpoint"', workspaceRoot);
+		}
+		
+		// Create and checkout new branch
+		await executeGitCommand(`git checkout -b ${breakpointName}`, workspaceRoot);
+	}
+
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(newBreakpointDisposable);
 	context.subscriptions.push(addStepDisposable);
+	context.subscriptions.push(pushMainDisposable);
 }
 
 // This method is called when your extension is deactivated
