@@ -16,8 +16,21 @@
       {
         "command": "class-breakpoint.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "class-breakpoint.newBreakpoint",
+        "title": "New Breakpoint"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "class-breakpoint.newBreakpoint",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

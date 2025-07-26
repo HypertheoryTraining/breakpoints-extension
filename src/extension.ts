@@ -19,7 +19,38 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from class-breakpoint!');
 	});
 
+	// Register the new breakpoint command
+	const newBreakpointDisposable = vscode.commands.registerCommand('class-breakpoint.newBreakpoint', async (uri: vscode.Uri) => {
+		// The uri parameter contains the folder that was right-clicked
+		const folderPath = uri.fsPath;
+		
+		// Prompt user for breakpoint name
+		const breakpointName = await vscode.window.showInputBox({
+			prompt: 'Enter a name for the breakpoint',
+			placeHolder: 'Breakpoint name...',
+			validateInput: (value: string) => {
+				if (!value || value.trim() === '') {
+					return 'Breakpoint name cannot be empty';
+				}
+				return null;
+			}
+		});
+		
+		// Check if user cancelled the input
+		if (breakpointName === undefined) {
+			return; // User cancelled
+		}
+		
+		// Show confirmation with the entered name and folder path
+		vscode.window.showInformationMessage(`Created breakpoint "${breakpointName}" in folder: ${folderPath}`);
+		
+		// Add your breakpoint logic here
+		// For example, you might want to create a file, mark a location, etc.
+		// You now have access to both breakpointName and folderPath
+	});
+
 	context.subscriptions.push(disposable);
+	context.subscriptions.push(newBreakpointDisposable);
 }
 
 // This method is called when your extension is deactivated
