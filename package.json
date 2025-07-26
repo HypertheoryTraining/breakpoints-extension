@@ -24,6 +24,10 @@
       {
         "command": "class-breakpoint.pushMain",
         "title": "BreakPoint: Push Main"
+      },
+      {
+        "command": "class-breakpoint.finishBreakpoint",
+        "title": "BreakPoint: Finish Breakpoint"
       }
     ],  
     "menus": {
