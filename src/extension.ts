@@ -110,10 +110,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Register the add step command
-	const addStepDisposable = vscode.commands.registerCommand('class-breakpoint.addStep', async (uri: vscode.Uri) => {
-		// The uri parameter contains the folder that was right-clicked
-		const folderPath = uri.fsPath;
-		
+	const addStepDisposable = vscode.commands.registerCommand('class-breakpoint.addStep', async () => {
 		try {
 			// Get the workspace root
 			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -121,7 +118,7 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showErrorMessage('No workspace folder found');
 				return;
 			}
-			
+
 			const workspaceRoot = workspaceFolder.uri.fsPath;
 			const breakpointsDir = path.join(workspaceRoot, 'breakpoints');
 			
@@ -206,13 +203,14 @@ export function activate(context: vscode.ExtensionContext) {
 					// Now copy the files that were just committed
 					await copyChangedFiles(workspaceRoot, targetDir);
 				} catch (gitError: any) {
-					vscode.window.showWarningMessage(`Git operations failed: ${gitError.message}. Falling back to copying entire folder.`);
-					// Fall back to copying entire folder if Git operations fail
-					await copyFolder(folderPath, targetDir);
+					vscode.window.showWarningMessage(`Git operations failed: ${gitError.message}. Creating empty step folder.`);
+					// Create empty folder if Git operations fail
+					fs.mkdirSync(targetDir, { recursive: true });
 				}
 			} else {
-				// Not in Git repository - copy entire folder as before
-				await copyFolder(folderPath, targetDir);
+				// Not in Git repository - inform user that this command requires Git
+				vscode.window.showErrorMessage('Add Step command requires a Git repository to track changes. Use New Breakpoint instead for non-Git projects.');
+				return;
 			}
 			
 			// If in Git repository, commit the step, merge to main, and switch back

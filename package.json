@@ -29,16 +29,11 @@
         "command": "class-breakpoint.pushMain",
         "title": "BreakPoint: Push Main"
       }
-    ],
+    ],  
     "menus": {
       "explorer/context": [
         {
           "command": "class-breakpoint.newBreakpoint",
-          "when": "explorerResourceIsFolder",
-          "group": "navigation"
-        },
-        {
-          "command": "class-breakpoint.addStep",
           "when": "explorerResourceIsFolder",
           "group": "navigation"
         }
