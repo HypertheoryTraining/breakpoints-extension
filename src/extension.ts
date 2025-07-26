@@ -193,7 +193,13 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			
 			// Copy the folder content
-			await copyFolder(folderPath, targetDir);
+			if (await isGitRepository(workspaceRoot)) {
+				// In a Git repository - copy only changed files
+				await copyChangedFiles(workspaceRoot, targetDir);
+			} else {
+				// Not in Git repository - copy entire folder as before
+				await copyFolder(folderPath, targetDir);
+			}
 			
 			// If in Git repository, commit the step, merge to main, and switch back
 			if (await isGitRepository(workspaceRoot)) {
@@ -290,6 +296,52 @@ export function activate(context: vscode.ExtensionContext) {
 				// Copy file
 				fs.copyFileSync(sourcePath, destPath);
 			}
+		}
+	}
+
+	// Helper function to copy only changed files since last commit
+	async function copyChangedFiles(workspaceRoot: string, destination: string): Promise<void> {
+		try {
+			// Get list of changed files since last commit
+			const changedFilesOutput = await executeGitCommand('git diff --name-only HEAD', workspaceRoot);
+			const stagedFilesOutput = await executeGitCommand('git diff --cached --name-only', workspaceRoot);
+			
+			// Combine changed and staged files
+			const changedFiles = new Set([
+				...changedFilesOutput.split('\n').filter(f => f.trim()),
+				...stagedFilesOutput.split('\n').filter(f => f.trim())
+			]);
+			
+			if (changedFiles.size === 0) {
+				vscode.window.showWarningMessage('No changed files found since last commit. Creating empty step folder.');
+				fs.mkdirSync(destination, { recursive: true });
+				return;
+			}
+			
+			// Create destination directory
+			fs.mkdirSync(destination, { recursive: true });
+			
+			// Copy each changed file
+			for (const relativeFilePath of changedFiles) {
+				const sourcePath = path.join(workspaceRoot, relativeFilePath);
+				const destPath = path.join(destination, relativeFilePath);
+				
+				// Check if source file exists (it might have been deleted)
+				if (fs.existsSync(sourcePath)) {
+					// Create directory structure if needed
+					const destDir = path.dirname(destPath);
+					fs.mkdirSync(destDir, { recursive: true });
+					
+					// Copy the file
+					fs.copyFileSync(sourcePath, destPath);
+				}
+			}
+			
+			vscode.window.showInformationMessage(`Copied ${changedFiles.size} changed file(s) to step folder`);
+			
+		} catch (error: any) {
+			vscode.window.showErrorMessage(`Failed to get changed files: ${error.message}`);
+			throw error;
 		}
 	}
 
