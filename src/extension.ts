@@ -1,6 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -41,13 +43,70 @@ export function activate(context: vscode.ExtensionContext) {
 			return; // User cancelled
 		}
 		
-		// Show confirmation with the entered name and folder path
-		vscode.window.showInformationMessage(`Created breakpoint "${breakpointName}" in folder: ${folderPath}`);
-		
-		// Add your breakpoint logic here
-		// For example, you might want to create a file, mark a location, etc.
-		// You now have access to both breakpointName and folderPath
+		try {
+			// Get the workspace root
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (!workspaceFolder) {
+				vscode.window.showErrorMessage('No workspace folder found');
+				return;
+			}
+			
+			const workspaceRoot = workspaceFolder.uri.fsPath;
+			const breakpointsDir = path.join(workspaceRoot, 'breakpoints');
+			const breakpointDir = path.join(breakpointsDir, breakpointName);
+			const targetDir = path.join(breakpointDir, '01-initial');
+			
+			// Create breakpoints directory if it doesn't exist
+			if (!fs.existsSync(breakpointsDir)) {
+				fs.mkdirSync(breakpointsDir, { recursive: true });
+			}
+			
+			// Check if breakpoint directory already exists
+			if (fs.existsSync(breakpointDir)) {
+				const overwrite = await vscode.window.showWarningMessage(
+					`Breakpoint "${breakpointName}" already exists. Overwrite?`,
+					'Yes', 'No'
+				);
+				if (overwrite !== 'Yes') {
+					return;
+				}
+				// Remove existing directory
+				fs.rmSync(breakpointDir, { recursive: true, force: true });
+			}
+			
+			// Copy the folder content
+			await copyFolder(folderPath, targetDir);
+			
+			// Show success message
+			vscode.window.showInformationMessage(`Created breakpoint "${breakpointName}" successfully!`);
+			
+		} catch (error) {
+			vscode.window.showErrorMessage(`Failed to create breakpoint: ${error}`);
+		}
 	});
+
+	// Helper function to copy folder recursively
+	async function copyFolder(source: string, destination: string): Promise<void> {
+		// Create destination directory
+		fs.mkdirSync(destination, { recursive: true });
+		
+		// Read source directory
+		const items = fs.readdirSync(source);
+		
+		for (const item of items) {
+			const sourcePath = path.join(source, item);
+			const destPath = path.join(destination, item);
+			const stat = fs.statSync(sourcePath);
+			
+			if (stat.isDirectory()) {
+				// Recursively copy subdirectory
+				await copyFolder(sourcePath, destPath);
+			} else {
+				// Copy file
+				fs.copyFileSync(sourcePath, destPath);
+			}
+		}
+	}
 
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(newBreakpointDisposable);
